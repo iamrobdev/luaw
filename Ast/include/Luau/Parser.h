@@ -466,6 +466,8 @@ private:
 
     void nextLexeme();
 
+    AstStat* parseIncr();
+
     struct Function
     {
         bool vararg;

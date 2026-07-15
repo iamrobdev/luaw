@@ -58,8 +58,8 @@ unsigned int Lexeme::getLength() const
     return length;
 }
 
-static const char* kReserved[] = {"and",   "break", "do",  "else", "elseif", "end",    "false", "for",  "function", "if",   "in",
-                                  "local", "nil",   "not", "or",   "repeat", "return", "then",  "true", "until",    "while"};
+static const char* kReserved[] = {"and",   "break", "do",  "else", "elseif", "end",    "false", "for",  "function", "fn",      "if",  "in",
+                                  "local", "nil",   "not", "or",   "repeat", "return", "then",  "true", "until",    "while", "incr"};
 
 std::string Lexeme::toString() const
 {
@@ -338,6 +338,8 @@ Lexeme::QuoteStyle Lexeme::getQuoteStyle() const
         return Lexeme::QuoteStyle::Single;
     else if (quote == '"')
         return Lexeme::QuoteStyle::Double;
+    else if (quote == '`')
+        return Lexeme::QuoteStyle::Backtick;
 
     LUAU_ASSERT(!"Unknown quote style");
     return Lexeme::QuoteStyle::Double; // unreachable, but required due to compiler warning
@@ -585,7 +587,8 @@ Lexeme Lexer::readQuotedString()
     Position start = position();
 
     char delimiter = peekch();
-    LUAU_ASSERT(delimiter == '\'' || delimiter == '"');
+
+    LUAU_ASSERT(delimiter == '\'' || delimiter == '"' || delimiter == '`');
     consume();
 
     unsigned int startOffset = offset;
@@ -600,7 +603,7 @@ Lexeme Lexer::readQuotedString()
             return Lexeme(Location(start, position()), Lexeme::BrokenString);
 
         case '\\':
-            readBackslashInString();
+            consume();
             break;
 
         default:

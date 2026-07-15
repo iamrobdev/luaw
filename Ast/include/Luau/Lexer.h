@@ -73,6 +73,7 @@ struct Lexeme
         ReservedFalse,
         ReservedFor,
         ReservedFunction,
+        ReservedFn,
         ReservedIf,
         ReservedIn,
         ReservedLocal,
@@ -85,6 +86,7 @@ struct Lexeme
         ReservedTrue,
         ReservedUntil,
         ReservedWhile,
+        ReservedIncr,
         Reserved_END
     };
 
@@ -92,6 +94,7 @@ struct Lexeme
     {
         Single,
         Double,
+        Backtick
     };
 
     Type type;

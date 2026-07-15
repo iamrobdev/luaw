@@ -457,6 +457,8 @@ AstStat* Parser::parseStat()
         return parseRepeat();
     case Lexeme::ReservedFunction:
         return parseFunctionStat(AstArray<AstAttr*>({nullptr, 0}));
+    case Lexeme::ReservedFn:
+        return parseFunctionStat(AstArray<AstAttr*>({nullptr, 0}));
     case Lexeme::ReservedLocal:
     {
         Location start = lexer.current().location;
@@ -469,6 +471,8 @@ AstStat* Parser::parseStat()
     case Lexeme::Attribute:
     case Lexeme::AttributeOpen:
         return parseAttributeStat();
+    case Lexeme::ReservedIncr:
+        return parseIncr();
     default:;
     }
 
@@ -5409,5 +5413,24 @@ void Parser::nextLexeme()
         type = lexer.next(/* skipComments= */ false, /* updatePrevLocation= */ false).type;
     }
 }
+AstStat* Parser::parseIncr()
+{
+    Location start = lexer.current().location;
 
+    nextLexeme();
+
+    AstExpr* var = parsePrimaryExpr(true);
+
+    if (!var)
+    {
+        return nullptr;
+    }
+
+    Location end = var->location;
+    Location location(start, end);
+
+    AstExpr* one = allocator.alloc<AstExprConstantNumber>(location, 1.0);
+
+    return allocator.alloc<AstStatCompoundAssign>(location, AstExprBinary::Op::Add, var, one);
+}
 } // namespace Luau

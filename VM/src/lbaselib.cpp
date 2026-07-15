@@ -34,6 +34,21 @@ static int luaB_print(lua_State* L)
     return 0;
 }
 
+static int luaw_write(lua_State* L)
+{
+    int n = lua_gettop(L); // number of arguments
+    for (int i = 1; i <= n; i++)
+    {
+        size_t l;
+        const char* s = luaL_tolstring(L, i, &l); // convert to string using __tostring et al
+        if (i > 1)
+            writestring("\t", 1);
+        writestring(s, l);
+        lua_pop(L, 1); // pop result
+    }
+    return 0;
+}
+
 static int luaB_tonumber(lua_State* L)
 {
     int base = luaL_optinteger(L, 2, 10);
@@ -470,6 +485,7 @@ static const luaL_Reg base_funcs[] = {
     {"next", luaB_next},
     {"newproxy", luaB_newproxy},
     {"print", luaB_print},
+    {"write", luaw_write},
     {"rawequal", luaB_rawequal},
     {"rawget", luaB_rawget},
     {"rawset", luaB_rawset},
