@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdlib>
 
 LUAU_FASTFLAG(LuauCustomYieldablePcalls)
 
@@ -63,6 +64,26 @@ static int luaw_writestring(lua_State* L)
     const char* s = luaL_checklstring(L, 1, &l); // get the string from the 1st argument and set l
     writestring(s, l);
     return 0;
+}
+
+static int luaw_host_exit(lua_State* L)
+{
+    int code = luaL_checkinteger(L, 1);
+    if (!code)
+    {
+        std::exit(0);
+    }
+    else
+    {
+        std::exit(code);
+    }
+    return 0; //satisfies compiler
+}
+
+static int luaw_host_abort(lua_State* L)
+{
+    std::abort();
+    return 0; // satisfies compiler
 }
 
 static int luaB_tonumber(lua_State* L)
@@ -512,10 +533,21 @@ static const luaL_Reg base_funcs[] = {
     {"tostring", luaB_tostring},
     {"type", luaB_type},
     {"typeof", luaB_typeof},
-    {"writestring", luaw_writestring},
-    {"write", luaw_write},
-    {"read", luaw_read},
     {NULL, NULL},
+};
+
+static const luaL_Reg io_funcs[] = {
+    {"write", luaw_write},
+    {"writestring", luaw_writestring},
+    {"read", luaw_read},
+    {NULL, NULL}
+};
+
+static const luaL_Reg host_funcs[] = {
+    {"os", NULL}, //holder of place as i cannot further code for today
+    {"exit", luaw_host_exit},
+    {"abort", luaw_host_abort},
+    {NULL, NULL}
 };
 
 static void auxopen(lua_State* L, const char* name, lua_CFunction f, lua_CFunction u)
@@ -533,6 +565,8 @@ int luaopen_base(lua_State* L)
 
     // open lib into global table
     luaL_register(L, "_G", base_funcs);
+    luaL_register(L, "io", io_funcs);
+    luaL_register(L, "host", host_funcs);
     lua_pushliteral(L, "Luau");
     lua_setglobal(L, "_VERSION"); // set global _VERSION
 
