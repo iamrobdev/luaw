@@ -26,7 +26,11 @@ if(LUAU_STATIC_CRT)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-project(Luau LANGUAGES CXX C)
+project(Luau LANGUAGES CXX C) # HERE BAWS
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 
 if (LUAU_BUILD_SHARED)
     add_library(Luau.Common SHARED)

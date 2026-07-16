@@ -24,9 +24,7 @@ static int luaB_print(lua_State* L)
     for (int i = 1; i <= n; i++)
     {
         size_t l;
-        const char* s = luaL_tolstring(L, i, &l); // convert to string using __tostring et al
-        if (i > 1)
-            writestring("\t", 1);
+        const char* s = luaL_tolstring(L, i, &l); // convert to string using __tostring
         writestring(s, l);
         lua_pop(L, 1); // pop result
     }
@@ -40,12 +38,30 @@ static int luaw_write(lua_State* L)
     for (int i = 1; i <= n; i++)
     {
         size_t l;
-        const char* s = luaL_tolstring(L, i, &l); // convert to string using __tostring et al
-        if (i > 1)
-            writestring("\t", 1);
+        const char* s = luaL_tolstring(L, i, &l); // convert to string using __tostring
         writestring(s, l);
         lua_pop(L, 1); // pop result
     }
+    return 0;
+}
+
+static int luaw_read(lua_State* L)
+{
+    char buffer[256];
+    if (fgets(buffer, sizeof(buffer), stdin) != NULL)
+    {
+        buffer[strcspn(buffer, "\n")] = '\0';
+        lua_pushstring(L, buffer);
+    } else lua_pushnil(L);
+    return 1;
+}
+
+static int luaw_writestring(lua_State* L)
+{
+    int n = lua_gettop(L);
+    size_t l;
+    const char* s = luaL_checklstring(L, 1, &l); // get the string from the 1st argument and set l
+    writestring(s, l);
     return 0;
 }
 
@@ -485,7 +501,6 @@ static const luaL_Reg base_funcs[] = {
     {"next", luaB_next},
     {"newproxy", luaB_newproxy},
     {"print", luaB_print},
-    {"write", luaw_write},
     {"rawequal", luaB_rawequal},
     {"rawget", luaB_rawget},
     {"rawset", luaB_rawset},
@@ -497,6 +512,9 @@ static const luaL_Reg base_funcs[] = {
     {"tostring", luaB_tostring},
     {"type", luaB_type},
     {"typeof", luaB_typeof},
+    {"writestring", luaw_writestring},
+    {"write", luaw_write},
+    {"read", luaw_read},
     {NULL, NULL},
 };
 
