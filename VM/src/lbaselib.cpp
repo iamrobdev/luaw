@@ -7,6 +7,8 @@
 #include "ldo.h"
 #include "ludata.h"
 
+#include "mpcore.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +86,20 @@ static int luaw_host_abort(lua_State* L)
 {
     std::abort();
     return 0; // satisfies compiler
+}
+
+static int luaw_host_os(lua_State* L)
+{
+    #if defined(mpWINDOWS)
+    lua_pushstring(L, "Windows");
+    #elif defined(mpLINUX) //Lmpinux xD
+    lua_pushstring(L, "Linux");
+    #elif defined(mpAPPLE)
+    lua_pushstring(L, "MacOS");
+    #else
+    lua_pushstring(L, "Other");
+    #endif
+    return 1;
 }
 
 static int luaB_tonumber(lua_State* L)
@@ -544,7 +560,7 @@ static const luaL_Reg io_funcs[] = {
 };
 
 static const luaL_Reg host_funcs[] = {
-    {"os", NULL}, //holder of place as i cannot further code for today
+    {"os", luaw_host_os},
     {"exit", luaw_host_exit},
     {"abort", luaw_host_abort},
     {NULL, NULL}
