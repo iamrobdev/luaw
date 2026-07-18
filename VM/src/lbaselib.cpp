@@ -9,6 +9,8 @@
 
 #include "mpcore.h"
 
+#include "../../Compiler/include/luacode.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +20,7 @@ LUAU_FASTFLAG(LuauCustomYieldablePcalls)
 
 static void writestring(const char* s, size_t l)
 {
-    fwrite(s, 1, l, stdout);
+    fwrite_locknt(s, 1, l, stdout);
 }
 
 static int luaB_print(lua_State* L)
@@ -101,6 +103,42 @@ static int luaw_host_os(lua_State* L)
     #endif
     return 1;
 }
+
+static int luaw_loadstring(lua_State* L)
+{
+    size_t l;
+    const char* s = luaL_checklstring(L, 1, &l);
+    const char* chunkname = luaL_optstring(L, 2, s);
+
+    size_t bytecodeSize = 0;
+    char* bytecode = luau_compile(s, l, nullptr, &bytecodeSize);
+
+    int result = luau_load(L, chunkname, bytecode, bytecodeSize, 0);
+    free(bytecode);
+
+    if (result != 0)
+    {
+        lua_pushnil(L);
+        lua_insert(L, -2);
+        return 2;
+    }
+
+    return 1;
+}
+
+static int luaw_io_flush(lua_State* L)
+{
+    fflush(stdout);
+    return 0;
+}
+
+static int luaw_io_setmaxbuf(lua_State* L) {
+    const unsigned int maxbuf = luaL_checkinteger(L, 1);
+    setvbuf(stdout, NULL, _IOFBF, maxbuf);
+    return 0;
+}
+
+
 
 static int luaB_tonumber(lua_State* L)
 {
@@ -556,13 +594,16 @@ static const luaL_Reg io_funcs[] = {
     {"write", luaw_write},
     {"writestring", luaw_writestring},
     {"read", luaw_read},
+    {"flush", luaw_io_flush},
+    {"setmaxbuf", luaw_io_setmaxbuf},
     {NULL, NULL}
 };
 
 static const luaL_Reg host_funcs[] = {
     {"os", luaw_host_os},
     {"exit", luaw_host_exit},
-    {"abort", luaw_host_abort},
+    {"abort", luaw_host_abort}, 
+    {"loadstring", luaw_loadstring},
     {NULL, NULL}
 };
 
