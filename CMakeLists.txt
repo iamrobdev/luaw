@@ -70,11 +70,11 @@ if(LUAU_BUILD_CLI)
 
     # This also adds target `name` on Linux/macOS and `name.exe` on Windows
     set_target_properties(Luau.Repl.CLI PROPERTIES OUTPUT_NAME luaw)
-    set_target_properties(Luau.Analyze.CLI PROPERTIES OUTPUT_NAME luau-analyze)
-    set_target_properties(Luau.Ast.CLI PROPERTIES OUTPUT_NAME luau-ast)
-    set_target_properties(Luau.Reduce.CLI PROPERTIES OUTPUT_NAME luau-reduce)
-    set_target_properties(Luau.Compile.CLI PROPERTIES OUTPUT_NAME luau-compile)
-    set_target_properties(Luau.Bytecode.CLI PROPERTIES OUTPUT_NAME luau-bytecode)
+    set_target_properties(Luau.Analyze.CLI PROPERTIES OUTPUT_NAME luaw-analyze)
+    set_target_properties(Luau.Ast.CLI PROPERTIES OUTPUT_NAME luaw-ast)
+    set_target_properties(Luau.Reduce.CLI PROPERTIES OUTPUT_NAME luaw-reduce)
+    set_target_properties(Luau.Compile.CLI PROPERTIES OUTPUT_NAME luaw-compile)
+    set_target_properties(Luau.Bytecode.CLI PROPERTIES OUTPUT_NAME luaw-bytecode)
 endif()
 
 if(LUAU_BUILD_TESTS)
