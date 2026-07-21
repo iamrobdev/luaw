@@ -17,7 +17,7 @@ target_sources(Luau.Common PRIVATE
     Common/src/BytecodeWire.cpp
     Common/src/StringUtils.cpp
     Common/src/TimeTrace.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Ast Sources
 target_sources(Luau.Ast PRIVATE
@@ -40,7 +40,7 @@ target_sources(Luau.Ast PRIVATE
     Ast/src/Location.cpp
     Ast/src/Parser.cpp
     Ast/src/PrettyPrinter.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Bytecode Sources
 target_sources(Luau.Bytecode PRIVATE
@@ -56,7 +56,7 @@ target_sources(Luau.Bytecode PRIVATE
     Bytecode/src/BytecodeGraphParser.h
     Bytecode/src/BytecodeGraphSerializer.h
     Bytecode/src/Sccp.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Inliner Sources
 target_sources(Luau.Inliner PRIVATE
@@ -66,7 +66,7 @@ target_sources(Luau.Inliner PRIVATE
     Inliner/src/JitInliner.cpp
     Inliner/src/luajitinliner.cpp
     Inliner/src/RuntimeBytecodeBuilder.h
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Compiler Sources
 target_sources(Luau.Compiler PRIVATE
@@ -90,7 +90,7 @@ target_sources(Luau.Compiler PRIVATE
     Compiler/src/Types.h
     Compiler/src/Utils.h
     Compiler/src/ValueTracking.h
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Config Sources
 target_sources(Luau.Config PRIVATE
@@ -101,7 +101,7 @@ target_sources(Luau.Config PRIVATE
     Config/src/Config.cpp
     Config/src/LinterConfig.cpp
     Config/src/LuauConfig.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.CodeGen Sources
 target_sources(Luau.CodeGen PRIVATE
@@ -198,7 +198,7 @@ target_sources(Luau.CodeGen PRIVATE
     CodeGen/src/IrTranslation.h
     CodeGen/src/IrValueLocationTracking.h
     CodeGen/src/NativeState.h
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.Analysis Sources
 target_sources(Luau.Analysis PRIVATE
@@ -372,7 +372,7 @@ target_sources(Luau.Analysis PRIVATE
     Analysis/src/Unifier.cpp
     Analysis/src/Unifier2.cpp
     Analysis/src/UserDefinedTypeFunction.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Luau.VM Sources
 target_sources(Luau.VM PRIVATE
@@ -436,12 +436,12 @@ target_sources(Luau.VM PRIVATE
     VM/src/ltm.h
     VM/src/ludata.h
     VM/src/lvm.h
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 target_sources(isocline PRIVATE
     extern/isocline/include/isocline.h
     extern/isocline/src/isocline.c
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 # Common sources shared between all CLI apps
 target_sources(Luau.CLI.lib PRIVATE
@@ -452,7 +452,7 @@ target_sources(Luau.CLI.lib PRIVATE
     CLI/src/FileUtils.cpp
     CLI/src/Flags.cpp
     CLI/src/VfsNavigator.cpp
- "VM/include/mpcore.h")
+ "VM/include/mpcore.h" "arg.h")
 
 if(TARGET Luau.Repl.CLI)
     # Luau.Repl.CLI Sources
@@ -468,7 +468,7 @@ if(TARGET Luau.Repl.CLI)
         CLI/src/Repl.cpp
         CLI/src/ReplEntry.cpp
         CLI/src/ReplRequirer.cpp
-     "VM/include/mpcore.h")
+     "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Analyze.CLI)
@@ -478,14 +478,14 @@ if(TARGET Luau.Analyze.CLI)
 
         CLI/src/Analyze.cpp
         CLI/src/AnalyzeRequirer.cpp
-     "VM/include/mpcore.h")
+     "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Ast.CLI)
     # Luau.Ast.CLI Sources
     target_sources(Luau.Ast.CLI PRIVATE
         CLI/src/Ast.cpp
-     "VM/include/mpcore.h")
+     "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.UnitTest)
@@ -589,7 +589,7 @@ if(TARGET Luau.UnitTest)
         tests/Variant.test.cpp
         tests/VecDeque.test.cpp
         tests/VisitType.test.cpp
-        tests/main.cpp "VM/include/mpcore.h")
+        tests/main.cpp "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Conformance)
@@ -603,7 +603,7 @@ if(TARGET Luau.Conformance)
         tests/FeedbackVector.test.cpp
         tests/IrLowering.test.cpp
         tests/SharedCodeAllocator.test.cpp
-        tests/main.cpp "VM/include/mpcore.h")
+        tests/main.cpp "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.CLI.Test)
@@ -624,7 +624,7 @@ if(TARGET Luau.CLI.Test)
         tests/RegisterCallbacks.cpp
         tests/Repl.test.cpp
         tests/RequireByString.test.cpp
-        tests/main.cpp "VM/include/mpcore.h")
+        tests/main.cpp "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Require)
@@ -646,7 +646,7 @@ if(TARGET Luau.Require)
     Require/src/PathUtilities.cpp
     Require/src/Require.cpp
     Require/src/RequireImpl.cpp
-    Require/src/RequireNavigator.cpp "VM/include/mpcore.h")
+    Require/src/RequireNavigator.cpp "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Web)
@@ -659,17 +659,17 @@ if(TARGET Luau.Reduce.CLI)
     # Luau.Reduce.CLI Sources
     target_sources(Luau.Reduce.CLI PRIVATE
         CLI/src/Reduce.cpp
-     "VM/include/mpcore.h")
+     "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Compile.CLI)
     # Luau.Compile.CLI Sources
     target_sources(Luau.Compile.CLI PRIVATE
-        CLI/src/Compile.cpp "VM/include/mpcore.h")
+        CLI/src/Compile.cpp "VM/include/mpcore.h" "arg.h")
 endif()
 
 if(TARGET Luau.Bytecode.CLI)
     # Luau.Bytecode.CLI Sources
     target_sources(Luau.Bytecode.CLI PRIVATE
-        CLI/src/Bytecode.cpp "VM/include/mpcore.h")
+        CLI/src/Bytecode.cpp "VM/include/mpcore.h" "arg.h")
 endif()

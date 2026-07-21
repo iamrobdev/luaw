@@ -41,6 +41,7 @@
 #include <valgrind/callgrind.h>
 #endif
 
+#include "../../arg.h"
 #include <locale.h>
 #include <signal.h>
 
@@ -52,7 +53,7 @@ constexpr int MaxTraversalLimit = 50;
 static bool codegen = false;
 static bool codegenCold = false;
 static bool jitInliner = false;
-static int program_argc = 0;
+int program_argc = 0;
 char** program_argv = nullptr;
 
 // Ctrl-C handling

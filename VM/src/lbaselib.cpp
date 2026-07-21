@@ -10,11 +10,29 @@
 #include "mpcore.h"
 
 #include "../../Compiler/include/luacode.h"
+#include "../../arg.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdlib>
+#include <thread>
+#include <chrono>
+#ifdef mpWINDOWS
+#include <windows.h>
+#include <sysinfoapi.h>
+#elif mpAPPLE
+#include <mach/mach.h>
+#include <mach/processor_info.h>
+#include <mach/mach_host.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#elif mpLINUX
+#include <fstream>
+#include <string>
+#include <sys/sysinfo.h>
+#endif
 
 LUAU_FASTFLAG(LuauCustomYieldablePcalls)
 
@@ -135,6 +153,199 @@ static int luaw_io_flush(lua_State* L)
 static int luaw_io_setmaxbuf(lua_State* L) {
     const unsigned int maxbuf = luaL_checkinteger(L, 1);
     setvbuf(stdout, NULL, _IOFBF, maxbuf);
+    return 0;
+}
+
+static int luaw_pass(lua_State* L)
+{
+    return 0;
+}
+
+static int luaw_host_argv(lua_State* L)
+{   
+    lua_createtable(L, program_argc, 0);
+    for (int i = 0; i < program_argc; i++)
+    {
+        lua_pushstring(L, program_argv[i]);
+        lua_rawseti(L, -2, i + 1);
+    }
+    return 1;
+}
+
+std::pair<uint64_t, uint64_t> cpuTimeSnapshot()
+{
+#ifdef mpWINDOWS
+    FILETIME idleTime, kernelTime, userTime;
+    if (GetSystemTimes(&idleTime, &kernelTime, &userTime))
+    {
+        uint64_t idle = ((uint64_t)idleTime.dwHighDateTime << 32) | idleTime.dwLowDateTime;
+        uint64_t kernel = ((uint64_t)kernelTime.dwHighDateTime << 32) | kernelTime.dwLowDateTime;
+        uint64_t user = ((uint64_t)userTime.dwHighDateTime << 32) | userTime.dwLowDateTime;
+        return {(kernel + user) - idle, idle};
+    }
+#elif mpAPPLE
+    processor_cpu_load_info_t cpuLoad;
+    mach_msg_type_number_t processorMsgCount;
+    natural_t processorCount;
+    kern_return_t kr = host_processor_info(
+        mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &processorCount, reinterpret_cast<processor_info_array_t*>(&cpuLoad), &processorMsgCount
+    );
+    if (kr == KERN_SUCCESS)
+    {
+        uint64_t total_work = 0;
+        uint64_t total_idle = 0;
+
+        for (natural_t i = 0; i < processorCount; ++i)
+        {
+            total_work += cpuLoad[i].cpu_ticks[CPU_STATE_USER] + cpuLoad[i].cpu_ticks[CPU_STATE_SYSTEM] + cpuLoad[i].cpu_ticks[CPU_STATE_NICE];
+            total_idle += cpuLoad[i].cpu_ticks[CPU_STATE_IDLE];
+        }
+
+        vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(cpuLoad), processorMsgCount * sizeof(integer_t));
+
+        return {total_work, total_idle};
+    }
+#elif mpLINUX
+    std::ifstream file("/proc/stat");
+    std::string cpu;
+    uint64_t user, nice, system, idle, iowait, irq, softirq, steal;
+    if (file >> cpu >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal)
+    {
+        return {user + nice + system + irq + softirq + steal, idle + iowait};
+    }
+#endif
+    return {0, 0};
+}
+
+static int luaw_host_argc(lua_State* L)
+{
+    lua_pushinteger(L, program_argc);
+    return 1;
+}
+
+static int luaw_host_cpu(lua_State* L) {
+    auto [work1, idle1] = cpuTimeSnapshot();
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    auto [work2, idle2] = cpuTimeSnapshot();
+
+    uint64_t delta_work = work2 - work1;
+    uint64_t delta_idle = idle2 - idle1;
+    uint64_t total_delta = delta_work + delta_idle;
+
+    if (total_delta == 0)
+    {
+        lua_pushnumber(L, 0.0);
+        return 1;
+    }
+    lua_pushnumber(L, (static_cast<double>(delta_work) / total_delta) * 100.0);
+    return 1;
+}
+
+static int luaw_host_cpu_cores(lua_State* L)
+{
+    lua_pushinteger(L, std::thread::hardware_concurrency());
+    return 1;
+}
+
+static int luaw_host_ram_total(lua_State* L)
+{
+#ifdef mpWINDOWS
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    if (GlobalMemoryStatusEx(&memInfo))
+    {
+        lua_pushnumber(L, static_cast<double>(memInfo.ullTotalPhys) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#elif mpAPPLE
+    int64_t mem_bytes = 0;
+    size_t len = sizeof(mem_bytes);
+    int mib[2] = {CTL_HW, HW_MEMSIZE};
+    if (sysctl(mib, 2, &mem_bytes, &len, NULL, 0) == 0)
+    {
+        lua_pushnumber(L, static_cast<double>(mem_bytes) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#elif mpLINUX
+    struct sysinfo memInfo;
+    if (sysinfo(&memInfo) == 0)
+    {
+        uint64_t total_bytes = static_cast<uint64_t>(memInfo.totalram) * memInfo.mem_unit;
+        lua_pushnumber(L, static_cast<double>(total_bytes) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#endif
+    lua_pushnumber(L, 0.0);
+    return 1;
+}
+
+static int luaw_host_ram_used(lua_State* L)
+{
+#ifdef mpWINDOWS
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    if (GlobalMemoryStatusEx(&memInfo))
+    {
+        uint64_t used_bytes = memInfo.ullTotalPhys - memInfo.ullAvailPhys;
+        lua_pushnumber(L, static_cast<double>(used_bytes) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#elif mpAPPLE__
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vmStats;
+    if (host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &count) == KERN_SUCCESS)
+    {
+        long long page_size = sysconf(_SC_PAGESIZE);
+        long long used_pages = vmStats.active_count + vmStats.inactive_count + vmStats.wire_count;
+        lua_pushnumber(L, static_cast<double>(used_pages * page_size) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#elif mpLINUX
+    struct sysinfo memInfo;
+    if (sysinfo(&memInfo) == 0)
+    {
+        uint64_t total_bytes = static_cast<uint64_t>(memInfo.totalram) * memInfo.mem_unit;
+        uint64_t free_bytes = static_cast<uint64_t>(memInfo.freeram) * memInfo.mem_unit;
+        uint64_t buffer_bytes = static_cast<uint64_t>(memInfo.bufferram) * memInfo.mem_unit;
+        lua_pushnumber(L, static_cast<double>(total_bytes - free_bytes - buffer_bytes) / (1024.0 * 1024.0 * 1024.0));
+        return 1;
+    }
+#endif
+    lua_pushnumber(L, 0.0);
+    return 1;
+}
+
+static int luaw_host_ram(lua_State* L)
+{
+#ifdef mpWINDOWS
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    if (GlobalMemoryStatusEx(&memInfo))
+    {
+        lua_pushnumber(L, static_cast<double>(memInfo.dwMemoryLoad));
+        return 1;
+    }
+#elif mpAPPLE || mpLINUX
+    double max_ram = GetMaxPhysicalRAM_GB();
+    double used_ram = GetUsedRAM_GB();
+    if (max_ram > 0.0)
+    {
+        lua_pushnumber(L, (used_ram / max_ram) * 100.0);
+        return 1;
+    }
+#endif
+    lua_pushnumber(L, 0.0);
+    return 1;
+}
+
+
+
+int luaw_wait(lua_State* L)
+{
+    double seconds = luaL_optnumber(L, 1, 0.0);
+    int ms = static_cast<int>(seconds * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+
     return 0;
 }
 
@@ -587,6 +798,8 @@ static const luaL_Reg base_funcs[] = {
     {"tostring", luaB_tostring},
     {"type", luaB_type},
     {"typeof", luaB_typeof},
+    {"pass", luaw_pass},
+    {"wait", luaw_wait},
     {NULL, NULL},
 };
 
@@ -604,6 +817,13 @@ static const luaL_Reg host_funcs[] = {
     {"exit", luaw_host_exit},
     {"abort", luaw_host_abort}, 
     {"loadstring", luaw_loadstring},
+    {"argv", luaw_host_argv},
+    {"argc", luaw_host_argc},
+    {"cpu_cores", luaw_host_cpu_cores},
+    {"cpu", luaw_host_cpu},
+    {"ram_total", luaw_host_ram_total},
+    {"ram_used", luaw_host_ram_used},
+    {"ram", luaw_host_ram},
     {NULL, NULL}
 };
 

@@ -6,6 +6,7 @@
 
 #include <limits>
 #include <math.h>
+#include <cmath>
 #include <time.h>
 
 #define LUAU_PI (3.14159265358979323846)
@@ -36,6 +37,23 @@ static void pcg32_seed(uint64_t* state, uint64_t seed)
     pcg32_random(state);
     *state += seed;
     pcg32_random(state);
+}
+
+static double bellWeightedRandom(double spread, double mean) //thx, slimey5676
+{
+    double u = (double)rand() / RAND_MAX;
+    if (u == 0.0) u = 0.0000001;
+    double mathPart = std::sqrt(-2.0 * std::log(u));
+    double sign = ((rand() % 2) == 0) ? 1.0 : -1.0;
+    return (sign * spread * mathPart) + mean;
+}
+
+static int luaw_math_bellWeightedRandom(lua_State* L) //thx, slimey5676
+{
+    double spread = luaL_checknumber(L, 1);
+    double mean = luaL_optnumber(L, 2, 0.0);
+    lua_pushnumber(L, bellWeightedRandom(spread, mean));
+    return 1;
 }
 
 static int math_abs(lua_State* L)
@@ -508,6 +526,7 @@ static const luaL_Reg mathlib[] = {
     {"isnan", math_isnan},
     {"isinf", math_isinf},
     {"isfinite", math_isfinite},
+    {"bellWeightedRandom", luaw_math_bellWeightedRandom},
     {NULL, NULL},
 };
 
