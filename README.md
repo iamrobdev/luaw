@@ -13,7 +13,7 @@ This repository hosts source code for the language implementation and associated
 
 Luau is an embeddable programming language, but it also comes with two command-line tools by default, `luaw` and `luaw-analyze`.
 
-To embed it, it's just like normal Luaw BUT make sure to include arg.h (don't move it!) and make sure to define `int program_argc` and `char** program_argv`
+To embed it, it's just like normal Luau BUT make sure to include arg.h (don't move it!) and make sure to define `int program_argc` and `char** program_argv`
 
 `luaw` is a command-line REPL and can also run input files. Note that REPL runs in a sandboxed environment and as such doesn't have access to the underlying file system except for ability to `require` modules.
 
